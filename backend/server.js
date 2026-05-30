@@ -6,7 +6,7 @@ import chatRoutes from "./routes/chatRoutes.js";
 const app = express();
 
 app.use(cors({
-  origin: "https://movie-frontend.vercel.app",
+  origin: "https://movie-verse-ai-fawn.vercel.app",
   credentials: true
 }));
 app.use(express.json());
