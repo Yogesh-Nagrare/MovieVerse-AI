@@ -31,7 +31,7 @@ function App() {
     try {
 
       const res = await axios.post(
-        "http://localhost:5000/api/chat",
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat`,
         {
           message
         }
