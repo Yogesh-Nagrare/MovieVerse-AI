@@ -1,0 +1,30 @@
+{
+  "name": "movie-recomm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "10_queryClassifier.js",
+  "scripts": {
+    "test": "node 1_testConnection.js",
+    "index": "node 7_runIndexing.js",
+    "query": "node 13_runQuery.js",
+    "server": "node backend/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^2.6.0",
+    "@huggingface/transformers": "^4.2.0",
+    "@langchain/core": "^1.1.48",
+    "@langchain/google-genai": "^2.1.31",
+    "@pinecone-database/pinecone": "^7.2.0",
+    "axios": "^1.16.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "neo4j-driver": "^6.0.1",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^6.0.227"
+  }
+}
