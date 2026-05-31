@@ -1,8 +1,10 @@
 // =====================================================================
 // 9_entityResolver.js — EXTRACT + RESOLVE ENTITIES
 // =====================================================================
+// UPDATED: accepts apiKey param, uses getGenai() for dynamic key
+// =====================================================================
 
-import { genai, driver } from "./2_config.js";
+import { getGenai, driver } from "./2_config.js";
 
 const MODEL = "gemini-2.5-flash-lite";
 
@@ -15,10 +17,10 @@ const NODE_TYPES = [
   { label: "Award", property: "name" },
 ];
 
-// ── Helper: call Gemini with proper error handling ──
-async function callGemini(prompt) {
+async function callGemini(prompt, apiKey) {
+  const g = getGenai(apiKey);
   try {
-    const response = await genai.models.generateContent({
+    const response = await g.models.generateContent({
       model: MODEL,
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
@@ -26,10 +28,9 @@ async function callGemini(prompt) {
   } catch (err) {
     const is429 = err.message?.includes("429") || err.status === 429;
     if (is429) {
-      console.warn("   ⚠️  Gemini quota exceeded. Waiting 65s...");
+      console.warn("   ⚠️  Quota hit. Waiting 65s...");
       await new Promise(r => setTimeout(r, 65000));
-      // Retry once
-      const response = await genai.models.generateContent({
+      const response = await g.models.generateContent({
         model: MODEL,
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
@@ -39,10 +40,7 @@ async function callGemini(prompt) {
   }
 }
 
-// =====================================================================
-// Step 1: LLM extracts entity names from query
-// =====================================================================
-async function extractEntities(query) {
+async function extractEntities(query, apiKey) {
   const prompt = `You extract entity names from movie-related queries.
 
 Extract ALL names, titles, and specific terms from the query.
@@ -56,21 +54,16 @@ Examples:
 "Movies directed by Christopher Nolan" → ["Christopher Nolan"]
 "Action movies with Tom Hardy" → ["Action", "Tom Hardy"]
 "How is DiCaprio related to Nolan?" → ["DiCaprio", "Nolan"]
-"Tell me about Inception" → ["Inception"]
+"Tell me about Movie 0315" → ["Movie 0315"]
 "Movies like Inception" → ["Inception"]
-"Sci-fi movies that won Oscar" → ["Sci-fi", "Oscar"]
-"Recommend me a good thriller" → ["thriller"]
-"Movies about dreams and reality" → ["dreams", "reality"]
 "who directed Movie 0001" → ["Movie 0001"]
 "how is Zendaya related to James Cameron" → ["Zendaya", "James Cameron"]
 
 Query: ${query}`;
 
   try {
-    const raw = (await callGemini(prompt))
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
+    const raw = (await callGemini(prompt, apiKey))
+      .replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     return JSON.parse(raw);
   } catch (err) {
     console.warn("⚠️ Entity extraction failed:", err.message?.substring(0, 80));
@@ -78,9 +71,6 @@ Query: ${query}`;
   }
 }
 
-// =====================================================================
-// Step 2: Resolve ONE entity across ALL node types in Neo4j
-// =====================================================================
 async function resolveEntity(entityName) {
   const session = driver.session({ defaultAccessMode: "READ" });
   const matches = [];
@@ -128,22 +118,16 @@ async function resolveEntity(entityName) {
     await session.close();
   }
 
-  const exactMatches = matches.filter((m) => m.matchType === "exact");
-  if (exactMatches.length > 0) return exactMatches;
-  return matches;
+  const exactMatches = matches.filter(m => m.matchType === "exact");
+  return exactMatches.length > 0 ? exactMatches : matches;
 }
 
-// =====================================================================
-// Main: Extract entities from query → Resolve each in Neo4j
-// =====================================================================
-async function resolveQueryEntities(query) {
+async function resolveQueryEntities(query, apiKey = null) {
   console.log("   🔍 Step 1: Extracting entities from query...");
-  const entityNames = await extractEntities(query);
+  const entityNames = await extractEntities(query, apiKey);
   console.log(`   ✅ Found: [${entityNames.join(", ")}]`);
 
-  if (entityNames.length === 0) {
-    return { query, entities: [], unresolved: [] };
-  }
+  if (entityNames.length === 0) return { query, entities: [], unresolved: [] };
 
   console.log("   🗄️  Step 2: Resolving entities in Neo4j...");
   const resolved = [];
@@ -158,7 +142,7 @@ async function resolveQueryEntities(query) {
       }
     } else {
       unresolved.push(name);
-      console.log(`   ❌ "${name}" → not found in graph`);
+      console.log(`   ❌ "${name}" → not found`);
     }
   }
 

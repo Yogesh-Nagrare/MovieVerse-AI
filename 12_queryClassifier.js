@@ -1,20 +1,22 @@
 // =====================================================================
-// 10_queryClassifier.js — CLASSIFY WITH RESOLVED ENTITY CONTEXT
+// 10_queryClassifier.js — CLASSIFY QUERY
+// =====================================================================
+// UPDATED: accepts apiKey param
 // =====================================================================
 
-import { genai } from "./2_config.js";
+import { getGenai } from "./2_config.js";
 
 const MODEL = "gemini-2.5-flash-lite";
 
-async function classifyQuery(query, resolvedEntities) {
+async function classifyQuery(query, resolvedEntities, apiKey = null) {
+  const g = getGenai(apiKey);
+
   const entityContext = resolvedEntities.entities.length > 0
-    ? resolvedEntities.entities
-        .map((e) => `"${e.searchTerm}" is a ${e.label} (full name: "${e.nodeName}")`)
-        .join("\n")
+    ? resolvedEntities.entities.map(e => `"${e.searchTerm}" is a ${e.label} (full name: "${e.nodeName}")`).join("\n")
     : "No entities were found in the database.";
 
   const unresolvedContext = resolvedEntities.unresolved.length > 0
-    ? `\nThese terms were NOT found in the database: ${resolvedEntities.unresolved.join(", ")}`
+    ? `\nNot found in DB: ${resolvedEntities.unresolved.join(", ")}`
     : "";
 
   const prompt = `You are a query classifier for a movie knowledge graph.
@@ -32,22 +34,17 @@ No markdown, no backticks.
 Query: ${query}`;
 
   try {
-    const response = await genai.models.generateContent({
+    const response = await g.models.generateContent({
       model: MODEL,
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
-
     const raw = response.text.trim()
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-
+      .replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     return JSON.parse(raw);
   } catch (err) {
     const is429 = err.message?.includes("429") || err.status === 429;
-    if (is429) console.warn("   ⚠️  Gemini quota hit on classifier. Defaulting to graph.");
-    else console.warn("⚠️ Classification failed, defaulting to graph");
-    return { type: "graph", reasoning: "Default fallback" };
+    if (is429) console.warn("   ⚠️  Quota hit on classifier.");
+    return { type: "similarity", reasoning: "Default fallback" };
   }
 }
 
