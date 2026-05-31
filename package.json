@@ -7,7 +7,7 @@
     "test": "node 1_testConnection.js",
     "index": "node 7_runIndexing.js",
     "query": "node 13_runQuery.js",
-    "server": "node backend/server.js"
+    "server": "node server.js"
   },
   "keywords": [],
   "author": "",
