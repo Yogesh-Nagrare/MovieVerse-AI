@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Network, Search, Sparkles, MoveRight } from "lucide-react";
 
 const FILMS = ["Inception", "The Dark Knight", "Interstellar", "Parasite", "Dune", "Oppenheimer"];
 
@@ -28,7 +29,7 @@ export default function Landing() {
       <nav style={s.nav}>
         <span style={s.logo}>MOVIEVERSE<span style={s.logoAccent}>AI</span></span>
         <button style={s.navBtn} onClick={() => navigate("/chat")}>
-          Launch App →
+          Launch App <MoveRight size={14} style={{ marginLeft: 8 }} />
         </button>
       </nav>
 
@@ -58,7 +59,7 @@ export default function Landing() {
 
         <div style={s.btnRow}>
           <button style={s.btnPrimary} onClick={() => navigate("/chat")}>
-            Start Asking →
+            Start Asking <MoveRight size={18} style={{ marginLeft: 8 }} />
           </button>
           <button style={s.btnSecondary} onClick={() => navigate("/dashboard")}>
             Explore Dashboard
@@ -87,10 +88,22 @@ export default function Landing() {
       {/* Features */}
       <section style={s.features}>
         {[
-          { icon: "🕸️", title: "Knowledge Graph", desc: "Neo4j stores 1000+ movies with rich relationships between entities" },
-          { icon: "🔍", title: "Semantic Search", desc: "Pinecone vector search finds movies by meaning, not just keywords" },
-          { icon: "🤖", title: "Gemini AI", desc: "Natural language answers powered by Gemini flash-lite" },
-        ].map((f) => (
+          { 
+            icon: <Network size={24} color="#e8c547" />, 
+            title: "Knowledge Graph", 
+            desc: "Neo4j stores 1000+ movies with rich relationships between entities" 
+          },
+          { 
+            icon: <Search size={24} color="#e8c547" />, 
+            title: "Semantic Search", 
+            desc: "Pinecone vector search finds movies by meaning, not just keywords" 
+          },
+          { 
+            icon: <Sparkles size={24} color="#e8c547" />, 
+            title: "Gemini AI", 
+            desc: "Natural language answers powered by Gemini flash-lite" 
+          },
+          ].map((f) => (
           <div key={f.title} style={s.featureCard}>
             <span style={s.featureIcon}>{f.icon}</span>
             <h3 style={s.featureTitle}>{f.title}</h3>
